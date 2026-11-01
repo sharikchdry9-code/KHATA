@@ -1,0 +1,325 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UDHAAR APP - Smart Business Khata</title>
+<style>
+:root{--green:#087f5b;--dark:#10251e;--bg:#f3f6f4;--white:#fff;--muted:#718078}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font-family:Arial,sans-serif;color:var(--dark)}
+button,input{font:inherit}
+button{cursor:pointer;border:0;border-radius:12px;padding:13px 17px;font-weight:700}
+.primary{background:var(--green);color:white}
+.secondary{background:#e5f3ed;color:var(--green)}
+.wrap{max-width:1100px;margin:auto;padding:20px}
+header{background:var(--dark);color:white;padding:20px;border-radius:18px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.logo{font-size:25px;font-weight:900;letter-spacing:1px}
+.logo span{color:#61d6a7}
+.small{font-size:12px;color:#b7c9c0;margin-top:5px}
+.card{background:white;padding:20px;border-radius:18px;margin-top:17px;box-shadow:0 5px 22px #14291b0a}
+h2{margin:0 0 15px;font-size:19px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:17px}
+.stat{background:white;padding:18px;border-radius:16px}
+.stat b{font-size:24px;display:block;margin-top:9px}
+.muted{color:var(--muted);font-size:13px}
+input{width:100%;padding:13px;border:1px solid #dce5df;border-radius:11px;margin:6px 0 12px;outline:none;background:#fff}
+input:focus{border-color:var(--green)}
+.row{display:flex;gap:10px;align-items:center}
+.row>*{flex:1;min-width:0}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.customer{padding:15px;border:1px solid #e7eee9;border-radius:13px;margin:9px 0;display:flex;justify-content:space-between;gap:12px;align-items:center}
+.customer button{padding:9px 12px}
+.hidden{display:none!important}
+.total{font-size:29px;color:var(--green);font-weight:900}
+.item{display:grid;grid-template-columns:1fr 75px 90px 35px;gap:7px;align-items:center;margin:7px 0}
+.item input{margin:0;padding:10px}
+.item button{padding:8px;background:#fff0f0;color:#b42318}
+nav{display:flex;gap:8px;flex-wrap:wrap;margin-top:17px}
+nav button{background:white;color:var(--dark)}
+nav button.active{background:var(--green);color:white}
+#receipt{background:white;color:#172b23;padding:23px;border:1px solid #ddd;border-radius:12px}
+#receipt h2{text-align:center;font-size:25px}
+.receipt-line{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed #ddd}
+.qr{max-width:180px;max-height:180px;object-fit:contain;display:block;margin:12px auto}
+footer{text-align:center;color:#89958e;font-size:12px;padding:25px}
+@media(max-width:650px){.grid{grid-template-columns:1fr}.wrap{padding:12px}.item{grid-template-columns:1fr 60px 75px 32px}.customer{align-items:flex-start}.logo{font-size:21px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+ <div><div class="logo">UDHAAR<span> APP</span></div>
+ <div class="small">Hisaab Simple. Business Smart.</div></div>
+ <button class="secondary" onclick="backup()">⬇ Backup</button>
+</header>
+
+<div class="grid">
+ <div class="stat"><span class="muted">Total Customers</span><b id="count">0</b></div>
+ <div class="stat"><span class="muted">Total Udhaar</span><b id="due">₹0</b></div>
+ <div class="stat"><span class="muted">Total Received</span><b id="received">₹0</b></div>
+</div>
+
+<nav>
+ <button class="active" onclick="show('home',this)">Dashboard</button>
+ <button onclick="show('customers',this)">Customers</button>
+ <button onclick="show('settings',this)">Shop Settings</button>
+</nav>
+
+<section id="home" class="card">
+ <h2>Welcome to UDHAAR APP 👋</h2>
+ <p class="muted">Apni dukaan ka hisaab aasani se manage karo.</p>
+ <button class="primary" onclick="newCustomer()">+ New Customer / Bill</button>
+ <div class="actions">
+  <button class="secondary" onclick="document.getElementById('restore').click()">Restore Backup</button>
+  <input id="restore" type="file" accept=".json" class="hidden" onchange="restore(event)">
+ </div>
+ <h2 style="margin-top:25px">Recent Customers</h2>
+ <div id="recent"></div>
+</section>
+
+<section id="customers" class="card hidden">
+ <h2>Customer Khata</h2>
+ <input id="search" placeholder="Search customer..." oninput="renderCustomers()">
+ <div id="customerList"></div>
+</section>
+
+<section id="editor" class="card hidden">
+ <h2 id="editorTitle">New Customer Bill</h2>
+ <label class="muted">Customer name</label>
+ <input id="cname" placeholder="Customer ka naam">
+ <label class="muted">Mobile number</label>
+ <input id="cphone" placeholder="Mobile number" inputmode="numeric">
+ <h2 style="margin-top:15px">Items</h2>
+ <div class="item muted"><span>Item name</span><span>Qty</span><span>Price ₹</span><span></span></div>
+ <div id="items"></div>
+ <button class="secondary" onclick="addItem()">+ Add More Items</button>
+ <div style="margin-top:20px">
+  <label class="muted">Discount (₹)</label>
+  <input type="number" id="discount" value="0" min="0" oninput="calc()">
+  <div class="row"><span class="muted">Subtotal</span><b id="subtotal">₹0</b></div>
+  <div class="row"><span class="muted">Final Total</span><div class="total" id="grand">₹0</div></div>
+ </div>
+ <div class="actions">
+  <button class="primary" onclick="saveBill()">Save Bill</button>
+  <button class="secondary" onclick="cancelEdit()">Cancel</button>
+ </div>
+</section>
+
+<section id="profile" class="card hidden">
+ <h2 id="profileName">Customer</h2>
+ <p class="muted" id="profilePhone"></p>
+ <div class="stat"><span class="muted">Remaining Balance</span><div class="total" id="profileDue">₹0</div></div>
+ <h2 style="margin-top:20px">Notebook / History</h2>
+ <div id="history"></div>
+ <div class="actions">
+  <button class="primary" onclick="newBillForCurrent()">+ New Entry</button>
+  <button class="secondary" onclick="payment()">Record Payment</button>
+  <button class="secondary" onclick="shareCustomer()">Share Khata</button>
+ </div>
+</section>
+
+<section id="settings" class="card hidden">
+ <h2>Shop Settings</h2>
+ <label class="muted">Shop name</label><input id="shopName" placeholder="Your shop name">
+ <label class="muted">Shopkeeper name</label><input id="owner" placeholder="Your name">
+ <label class="muted">Mobile number</label><input id="shopPhone" placeholder="Shop mobile number">
+ <label class="muted">Shop address</label><input id="address" placeholder="Shop address">
+ <label class="muted">Upload original UPI QR image</label>
+ <input type="file" id="qrFile" accept="image/*" onchange="uploadQR(event)">
+ <img id="qrPreview" class="qr hidden">
+ <button class="primary" onclick="saveSettings()">Save Shop Details</button>
+ <p class="muted">QR image is included with the bill. Payment confirmation is not automatic.</p>
+</section>
+
+<section id="receiptSection" class="card hidden">
+ <h2>Receipt Preview</h2>
+ <div id="receipt"></div>
+ <div class="actions">
+  <button class="primary" onclick="shareReceipt()">Share Receipt</button>
+  <button class="secondary" onclick="downloadReceipt()">Download HTML</button>
+  <button class="secondary" onclick="backProfile()">Back</button>
+ </div>
+</section>
+<footer>UDHAAR APP • Smart Digital Khata</footer>
+</div>
+
+<script>
+const KEY="udhaar_app_data_v1";
+let data=JSON.parse(localStorage.getItem(KEY)||'null')||{
+ shop:{name:"",owner:"",phone:"",address:"",qr:""},
+ customers:[]
+};
+let current=null,editItems=[],receiptHTML="";
+
+function persist(){
+ try{localStorage.setItem(KEY,JSON.stringify(data));}
+ catch(e){alert("Storage full. Please download a backup and remove large QR images.");}
+ render();
+}
+function money(n){return "₹"+(Number(n)||0).toLocaleString("en-IN",{maximumFractionDigits:2});}
+function safe(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function show(id,btn){
+ document.querySelectorAll("section").forEach(x=>x.classList.add("hidden"));
+ document.getElementById(id).classList.remove("hidden");
+ document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));
+ if(btn)btn.classList.add("active");
+}
+function balance(c){
+ return c.bills.reduce((s,b)=>s+b.total,0)-c.payments.reduce((s,p)=>s+p.amount,0);
+}
+function totals(){
+ let due=0,received=0;
+ data.customers.forEach(c=>{due+=balance(c);c.payments.forEach(p=>received+=p.amount);});
+ document.getElementById("count").textContent=data.customers.length;
+ document.getElementById("due").textContent=money(due);
+ document.getElementById("received").textContent=money(received);
+}
+function render(){
+ totals();renderCustomers();
+ let box=document.getElementById("recent");
+ box.innerHTML=data.customers.slice(-5).reverse().map(c=>customerHTML(c)).join("")||'<p class="muted">Abhi koi customer nahi. Pehla bill banao!</p>';
+}
+function customerHTML(c){
+ return `<div class="customer"><div><b>${safe(c.name)}</b><div class="muted">${safe(c.phone||"No number")} • ${c.bills.length} bills</div><b>${money(balance(c))} baaki</b></div><button class="secondary" onclick="openCustomer('${c.id}')">Open →</button></div>`;
+}
+function renderCustomers(){
+ let q=(document.getElementById("search")?.value||"").toLowerCase();
+ document.getElementById("customerList").innerHTML=data.customers.filter(c=>(c.name+" "+c.phone).toLowerCase().includes(q)).map(c=>customerHTML(c)).join("")||'<p class="muted">No customers found.</p>';
+}
+function newCustomer(){
+ current=null;editItems=[];document.getElementById("cname").value="";
+ document.getElementById("cphone").value="";
+ document.getElementById("discount").value=0;
+ document.getElementById("editorTitle").textContent="New Customer Bill";
+ document.getElementById("items").innerHTML="";addItem();addItem();calc();show("editor");
+}
+function newBillForCurrent(){
+ let c=data.customers.find(x=>x.id===current);if(!c)return;
+ newCustomer();document.getElementById("cname").value=c.name;
+ document.getElementById("cphone").value=c.phone;current=c.id;
+}
+function addItem(name="",qty=1,price=0){
+ let div=document.createElement("div");div.className="item";
+ div.innerHTML=`<input class="iname" placeholder="Item name" value="${safe(name)}">
+ <input class="iqty" type="number" min="0" step="any" value="${qty}" oninput="calc()">
+ <input class="iprice" type="number" min="0" step="any" value="${price}" oninput="calc()">
+ <button onclick="this.parentElement.remove();calc()">×</button>`;
+ document.getElementById("items").appendChild(div);calc();
+}
+function calc(){
+ let sub=0;
+ document.querySelectorAll("#items .item").forEach(row=>{
+ let q=Number(row.querySelector(".iqty").value)||0;
+ let p=Number(row.querySelector(".iprice").value)||0;
+ sub+=q*p;
+ });
+ let d=Math.max(0,Number(document.getElementById("discount").value)||0);
+ document.getElementById("subtotal").textContent=money(sub);
+ document.getElementById("grand").textContent=money(Math.max(0,sub-d));
+}
+function saveBill(){
+ let name=document.getElementById("cname").value.trim();
+ if(!name)return alert("Customer name daalo.");
+ let items=[...document.querySelectorAll("#items .item")].map(r=>({
+ name:r.querySelector(".iname").value.trim(),
+ qty:Number(r.querySelector(".iqty").value)||0,
+ price:Number(r.querySelector(".iprice").value)||0
+ })).filter(x=>x.name&&x.qty>0&&x.price>=0);
+ if(!items.length)return alert("Kam se kam ek valid item add karo.");
+ let sub=items.reduce((s,x)=>s+x.qty*x.price,0);
+ let discount=Math.max(0,Number(document.getElementById("discount").value)||0);
+ if(discount>sub)return alert("Discount subtotal se zyada nahi ho sakta.");
+ let c=data.customers.find(x=>x.id===current);
+ if(!c){c={id:crypto.randomUUID(),name,phone:document.getElementById("cphone").value.trim(),bills:[],payments:[]};data.customers.push(c);}
+ c.name=name;c.phone=document.getElementById("cphone").value.trim();
+ c.bills.push({id:crypto.randomUUID(),date:new Date().toISOString(),items,subtotal:sub,discount,total:sub-discount});
+ current=c.id;persist();openCustomer(current);
+}
+function openCustomer(id){
+ current=id;let c=data.customers.find(x=>x.id===id);if(!c)return;
+ document.getElementById("profileName").textContent=c.name;
+ document.getElementById("profilePhone").textContent=c.phone||"No mobile number";
+ document.getElementById("profileDue").textContent=money(balance(c));
+ let h="";
+ c.bills.slice().reverse().forEach(b=>{
+ h+=`<div class="card"><b>${new Date(b.date).toLocaleString()}</b>${b.items.map(i=>`<div class="receipt-line"><span>${safe(i.name)} × ${i.qty}</span><b>${money(i.qty*i.price)}</b></div>`).join("")}<div class="receipt-line"><b>Bill total</b><b>${money(b.total)}</b></div></div>`;
+ });
+ c.payments.slice().reverse().forEach(p=>{h+=`<div class="card"><b>Payment received</b><div class="muted">${new Date(p.date).toLocaleString()}</div><b style="color:green">${money(p.amount)}</b></div>`;});
+ document.getElementById("history").innerHTML=h||'<p class="muted">No entries yet.</p>';
+ show("profile");
+}
+function payment(){
+ let c=data.customers.find(x=>x.id===current);if(!c)return;
+ let n=Number(prompt("Kitna payment receive hua?"));
+ if(!Number.isFinite(n)||n<=0)return;
+ if(n>balance(c))return alert("Payment remaining balance se zyada hai.");
+ c.payments.push({amount:n,date:new Date().toISOString()});persist();openCustomer(current);
+}
+function cancelEdit(){if(current)openCustomer(current);else show("home");}
+function uploadQR(e){
+ let f=e.target.files[0];if(!f)return;
+ if(f.size>2*1024*1024)return alert("QR image 2MB se chhoti rakho.");
+ let r=new FileReader();r.onload=()=>{data.shop.qr=r.result;document.getElementById("qrPreview").src=r.result;document.getElementById("qrPreview").classList.remove("hidden");};r.readAsDataURL(f);
+}
+function saveSettings(){
+ data.shop.name=document.getElementById("shopName").value.trim();
+ data.shop.owner=document.getElementById("owner").value.trim();
+ data.shop.phone=document.getElementById("shopPhone").value.trim();
+ data.shop.address=document.getElementById("address").value.trim();
+ persist();alert("Shop details saved!");
+}
+function loadSettings(){
+ ["name","owner","phone","address"].forEach(k=>document.getElementById(k==="name"?"shopName":k==="owner"?"owner":k==="phone"?"shopPhone":"address").value=data.shop[k]||"");
+ if(data.shop.qr){document.getElementById("qrPreview").src=data.shop.qr;document.getElementById("qrPreview").classList.remove("hidden");}
+}
+function buildReceipt(c){
+ let b=c.bills[c.bills.length-1];if(!b)return "";
+ return `<div id="receipt"><h2>${safe(data.shop.name||"UDHAAR APP")}</h2><p style="text-align:center">${safe(data.shop.address||"")}<br>${safe(data.shop.phone||"")}</p><hr><b>Customer:</b> ${safe(c.name)}<br><b>Mobile:</b> ${safe(c.phone||"-")}<br><b>Date:</b> ${new Date(b.date).toLocaleString()}<hr><div class="receipt-line"><b>ITEM</b><b>AMOUNT</b></div>${b.items.map(i=>`<div class="receipt-line"><span>${safe(i.name)} (${i.qty} × ${money(i.price)})</span><b>${money(i.qty*i.price)}</b></div>`).join("")}<div class="receipt-line"><span>Subtotal</span><b>${money(b.subtotal)}</b></div><div class="receipt-line"><span>Discount</span><b>${money(b.discount)}</b></div><div class="receipt-line" style="font-size:22px"><b>TOTAL</b><b>${money(b.total)}</b></div><p style="text-align:center">Thank you for shopping with us!</p>${data.shop.qr?`<img class="qr" src="${data.shop.qr}"><p style="text-align:center">SCAN TO PAY • Verify payment in your UPI app</p>`:""}</div>`;
+}
+function shareCustomer(){
+ let c=data.customers.find(x=>x.id===current);if(!c)return;
+ let text=`${data.shop.name||"UDHAAR APP"}\nCustomer: ${c.name}\n\n`+c.bills.map(b=>b.items.map(i=>`${i.name} x ${i.qty} = ${money(i.qty*i.price)}`).join("\n")+`\nBill Total: ${money(b.total)}`).join("\n\n")+`\n\nRemaining balance: ${money(balance(c))}`;
+ if(navigator.share)navigator.share({title:"Customer Khata",text}).catch(()=>{});
+ else window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank");
+}
+function backProfile(){openCustomer(current);}
+function makeShareFile(){
+ let c=data.customers.find(x=>x.id===current);if(!c)return null;
+ let html=buildReceipt(c);
+ let blob=new Blob(["<!DOCTYPE html><html><meta charset='UTF-8'><meta name='viewport' content='width=device-width'><body>"+html+"</body></html>"],{type:"text/html"});
+ return new File([blob],"udhaar-receipt.html",{type:"text/html"});
+}
+async function shareReceipt(){
+ let c=data.customers.find(x=>x.id===current);if(!c)return;
+ let html=buildReceipt(c);
+ let blob=new Blob(["<!DOCTYPE html><html><meta charset='UTF-8'><meta name='viewport' content='width=device-width'><body>"+html+"</body></html>"],{type:"text/html"});
+ let file=new File([blob],"udhaar-receipt.html",{type:"text/html"});
+ if(navigator.canShare&&navigator.canShare({files:[file]})){
+  try{await navigator.share({files:[file],title:"UDHAAR APP Receipt"});return;}catch(e){}
+ }
+ let text=`${data.shop.name||"UDHAAR APP"}\nCustomer: ${c.name}\nBalance: ${money(balance(c))}\nReceipt details: ${location.href}`;
+ window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank");
+}
+function downloadReceipt(){
+ let c=data.customers.find(x=>x.id===current);if(!c)return;
+ let blob=new Blob(["<!DOCTYPE html><html><meta charset='UTF-8'><body>"+buildReceipt(c)+"</body></html>"],{type:"text/html"});
+ let a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="udhaar-receipt.html";a.click();URL.revokeObjectURL(a.href);
+}
+function backup(){
+ let blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+ let a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="udhaar-backup.json";a.click();URL.revokeObjectURL(a.href);
+}
+function restore(e){
+ let f=e.target.files[0];if(!f)return;
+ let r=new FileReader();r.onload=()=>{
+ try{let d=JSON.parse(r.result);if(!d.shop||!Array.isArray(d.customers))throw Error();if(!confirm("Current data replace karke backup restore karein?"))return;data=d;persist();loadSettings();alert("Backup restored.");}
+ catch(err){alert("Invalid backup file.");}
+ };r.readAsText(f);
+}
+function newBillForCurrent(){let c=data.customers.find(x=>x.id===current);if(!c)return;let id=c.id;newCustomer();document.getElementById("cname").value=c.name;document.getElementById("cphone").value=c.phone;current=id;}
+loadSettings();render();
+</script>
+</body>
+</html>
